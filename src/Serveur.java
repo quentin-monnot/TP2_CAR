@@ -29,7 +29,7 @@ public class Serveur {
                     service = ecoute.accept();
                     File file =new File("fichierATraiter.txt");
                     ObjectInputStream in=new ObjectInputStream(service.getInputStream());
-                    FileOutputStream out =new FileOutputStream(file);
+					FileOutputStream out =new FileOutputStream(file);
                     byte buf[] = new byte[1024];
                     int n;
                     while((n=in.read(buf))!=-1){
