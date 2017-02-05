@@ -1,35 +1,41 @@
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
+import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
 
 public class Client {
-
+	
+	static Socket s;
+	static DataOutputStream out;
+	
 	public static void main(String[] args){
 		try {
-			// Création des flux d'envoi
-	        Socket s = new Socket(InetAddress.getLocalHost(), 4000);
-	        FileInputStream inf=new FileInputStream(new File("lorem-ipsum.txt"));
-	        ObjectOutputStream out=new ObjectOutputStream(s.getOutputStream());               
-	        byte buf[] = new byte[1024];
-	        int n;                   
-	        while((n=inf.read(buf))!=-1){
-	        	out.write(buf,0,n);                   
-	        }
-	        BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-	        String response = in.readLine();
+			s=new Socket("127.0.0.1",4000);
+			File f = new File(args[0]);
+			envoiFichier(s,f);
+			BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+			String response = in.readLine();
 			System.out.println(response);
-	        inf.close();
-	        out.close();   
-	        s.close();         
+			/* Le deuxieme parametre du jar definie l'arret du serveur */
+			/* Si 1 alors le serveur continue sinon il s'arrete */
+			/* Si aucun parametre n'est saisie alors on arrete le serveur */
+			out = new DataOutputStream(s.getOutputStream());
+			if(args.length != 2){
+				out.writeBytes("0\n");
+			}
+			s.close();
 		}catch(Exception e) {
-	        System.out.println("EnvoiFichier : Erreur lors de l'envoi du fichier "+e);
+			System.out.println("Une erreur est survenue ---> "+e);
+		}
+	}
+	
+	public static void envoiFichier(Socket s, File f){
+		try {
+			ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream());             
+	        byte content[] = Files.readAllBytes(f.toPath());
+	        out.writeObject(content);
+		}catch(Exception e){
+			System.out.println("EnvoiFichier : Erreur lors de l'envoi du fichier "+e);
 		}
 	}
 }
+

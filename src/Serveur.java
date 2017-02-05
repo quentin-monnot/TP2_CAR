@@ -1,49 +1,50 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Scanner;
 
 public class Serveur {
 	
-	private static ServerSocket ecoute;
-	private static Socket service;
-
+	private static Scanner sc = new Scanner(System.in);
+	
 	public static void main(String[] args) throws NumberFormatException, InterruptedException{
 		try{
-            ecoute = new ServerSocket(4000);
-            
-            service = (Socket) null;
-            while (true) {
-
-
-                    service = ecoute.accept();
-                    File file =new File("fichierATraiter.txt");
-                    ObjectInputStream in=new ObjectInputStream(service.getInputStream());
-					FileOutputStream out =new FileOutputStream(file);
-                    byte buf[] = new byte[1024];
-                    int n;
-                    while((n=in.read(buf))!=-1){
-                        out.write(buf,0,n);                                        
-                    }
-    				DataOutputStream sortie = new DataOutputStream(service.getOutputStream());
-    				sortie.writeBytes("toto");
-                    sortie.close();                    
-                    service.close();
-    				
-            }
+			ServerSocket sv = new ServerSocket(4000);
+	        while (true){
+	        	Socket s=sv.accept();
+	        	File file =new File("fichierATraiter.txt");
+	        	DataOutputStream sortieMsg = new DataOutputStream(s.getOutputStream());
+	        	receptionFichier(s,file);
+	            String msg = process(file,Integer.parseInt(args[0]));
+	            System.out.println(msg);
+	            sortieMsg.writeBytes(msg+"\n");
+	            file.delete();
+	            BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+	            if(in.readLine() != null){
+	            	System.out.println("ARRET DU SERVEUR !");
+	            	sv.close();
+	            	s.close();
+	            	break;
+	            }
+	        }
 	    }catch(IOException e){
-	            System.out.println("ServeurFichier : Erreur de réception du fichier");
+	    	System.out.println("Une erreur est survenue ----> " + e);
 	    }
+	}
+	
+	public static void receptionFichier(Socket s,File file){
+		try {
+			 ObjectInputStream in = new ObjectInputStream(s.getInputStream());
+			 byte[] content = (byte[]) in.readObject();
+			 Files.write(file.toPath(), content);
+			 
+		} catch (IOException e) {
+			System.out.println("ServeurFichier : Erreur de réception du fichier ----> " + e);
+		} catch (ClassNotFoundException e) {
+			System.out.println("Une erreur est survenue avec le fichier ----> " + e);
+		}
 	}
 	
 	public static String process(File f, int nbThread) throws FileNotFoundException, InterruptedException{
@@ -55,8 +56,7 @@ public class Serveur {
 			lineText[i]=new StringBuilder();
 		}
 		
-		@SuppressWarnings("resource")
-		Scanner sc = new Scanner(f);
+		sc = new Scanner(f);
 		int j=0;
 		
 		while(sc.hasNextLine()){
@@ -84,7 +84,6 @@ public class Serveur {
 		int valeur = tabThread[0].getApp().findMax().getValue();
 		
 		return "Le mots le plus récurent est " + mot + " avec " + valeur + " apparition dans le texte.";
-		
 	}
 	
 	public static void fusion(HashMap<String, Integer> mainMap,HashMap<String, Integer> mergeMap){
